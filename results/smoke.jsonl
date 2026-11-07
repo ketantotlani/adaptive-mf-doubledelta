@@ -1,0 +1,2 @@
+{"baseline": "B0_vlm_only", "mse_cp": 0.03322416152594895, "cl_abs_err": 0.06090772565868166, "cm_abs_err": 0.0036711934953927994, "share_of_gap_in_worst_20pct": 0.7256202021851946}
+{"baseline": "B3", "mode": "sobol", "n_geoms": 8, "n_snapshots": 72, "seed": 0, "rans_cpuh": 9144.0, "train_seconds": 14.0, "mse_cp": 0.11165027413517237, "cl_abs_err": 0.18835317343473434, "cm_abs_err": 0.038303484519322716}

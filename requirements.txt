@@ -1,0 +1,7 @@
+torch>=2.2
+torch_geometric>=2.5
+numpy
+scipy
+pyvista            # reads SU2 surface .vtk files
+huggingface_hub    # downloads only the files we need
+remotezip          # read single files from remote zips

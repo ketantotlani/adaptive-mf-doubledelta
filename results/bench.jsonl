@@ -1,0 +1,2 @@
+{"machine": "macOS-27.0.1-arm64-arm-64bit", "device": "mps", "hidden": 64, "params": 61573, "ms_per_snapshot_epoch": 21.42, "B1_full_200ep_min": 164.5, "B2_B3_sweeps_h": 10.63, "adaptive_loop_all_strategies_h": 32.9}
+{"machine": "macOS-27.0.1-arm64-arm-64bit", "device": "mps", "hidden": 128, "params": 237829, "ms_per_snapshot_epoch": 53.38, "B1_full_200ep_min": 409.9, "B2_B3_sweeps_h": 26.48, "adaptive_loop_all_strategies_h": 81.99}

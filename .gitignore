@@ -1,0 +1,15 @@
+# environments
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+
+# data (lives on the external drive / is downloaded by fetch_needed.py)
+data/
+*.npz
+*.vtu
+*.vtk
+
+# generated figures from scratch scripts
+scripts/*.png
