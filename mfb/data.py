@@ -49,7 +49,10 @@ def load_graphs(root, rows):
     root = pathlib.Path(root); out = []
     for r in rows:
         z = np.load(root / "snap" / f"{r['sid']}.npz")
-        out.append(Data(x=torch.tensor(z["x"]), y=torch.tensor(z["y"]),
+        x = z["x"]
+        if x.shape[1] == 14:   # files from the first preprocessing run: drop column 4, the VLM "thickness" field,
+            x = np.delete(x, 4, axis=1)   # which is stored differently in training and holdout json (see README)
+        out.append(Data(x=torch.tensor(x), y=torch.tensor(z["y"]),
                         pos=torch.tensor(z["pos"]), area=torch.tensor(z["area"]),
                         edge_index=torch.tensor(z["edge_index"]), edge_attr=torch.tensor(z["edge_attr"]),
                         aoa=torch.tensor([r["aoa_deg"]]), sid=r["sid"], geom=r["geom"],

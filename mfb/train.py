@@ -30,9 +30,13 @@ def main():
     ap.add_argument("--mode", choices=["all", "random", "sobol"], default="all")
     ap.add_argument("--n-geoms", type=int, nargs="*", default=[0]); ap.add_argument("--seeds", type=int, nargs="*", default=[0])
     ap.add_argument("--epochs", type=int, default=DEFAULT_CFG["epochs"]); ap.add_argument("--hidden", type=int, default=DEFAULT_CFG["hidden"])
+    ap.add_argument("--aoas", type=float, nargs="*", default=None,
+                    help="use only these angles, e.g. 11 13 15 17 19 (the paper's Sec. 4 setting)")
     a = ap.parse_args()
 
     rows = read_index(a.data)
+    if a.aoas:
+        rows = [r for r in rows if r["aoa_deg"] in set(a.aoas)]
     train_rows = [r for r in rows if r["split"] == "train"]; test_rows = [r for r in rows if r["split"] == "test"]
     test = load_graphs(a.data, test_rows)
     pathlib.Path(a.out).parent.mkdir(parents=True, exist_ok=True)
@@ -42,7 +46,7 @@ def main():
         all_train = load_graphs(a.data, train_rows)
         gap = np.sort(vlm_only(all_train)["per_snapshot_mse"])[::-1]
         top20 = gap[: max(1, len(gap) // 5)].sum() / gap.sum()
-        out = dict(baseline="B0_vlm_only", **{k: v for k, v in res.items() if k != "per_snapshot_mse"},
+        out = dict(baseline="B0_vlm_only", aoas=a.aoas, n_test=len(test), **{k: v for k, v in res.items() if k != "per_snapshot_mse"},
                    share_of_gap_in_worst_20pct=float(top20))
         print(json.dumps(out)); open(a.out, "a").write(json.dumps(out) + "\n"); return
 
@@ -61,7 +65,7 @@ def main():
             t0 = time.time()
             T = Trainer(tr[0].x.shape[1], normaliser(tr), cfg); T.fit(tr, cfg["epochs"], seed)
             out = dict(baseline={"all": "B1", "random": "B2", "sobol": "B3"}[a.mode], mode=a.mode, n_geoms=len(geoms),
-                       n_snapshots=len(sel), seed=seed, rans_cpuh=sum(cost[g] for g in geoms),
+                       n_snapshots=len(sel), n_test=len(test), aoas=a.aoas, epochs=cfg["epochs"], seed=seed, rans_cpuh=sum(cost[g] for g in geoms),
                        train_seconds=round(time.time() - t0, 1), **T.evaluate(test))
             print(json.dumps(out)); open(a.out, "a").write(json.dumps(out) + "\n")
 

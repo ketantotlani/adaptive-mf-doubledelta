@@ -133,7 +133,7 @@ def map_to_panels(cen, nA, cp, quads):
 
 # ------------------------------------------------------------------ one wing
 def process_wing(job):
-    wing_dir, split, design, rank, sref, xref, ausm, out = job
+    wing_dir, split, design, rank, sref, xref, ausm, out, force = job
     wing_dir = pathlib.Path(wing_dir); geom = wing_dir.name; out = pathlib.Path(out)
     jf = wing_dir / f"{geom}.json"
     if not jf.exists():
@@ -143,7 +143,7 @@ def process_wing(job):
         aoa = int(round(float(aoa_dir.name.replace("degAOA", ""))))
         sid = f"{geom}_a{aoa:02d}"; npz = out / "snap" / f"{sid}.npz"
         vtu, fb = aoa_dir / "surface_flow.vtu", aoa_dir / "forces_breakdown.dat"
-        if not npz.exists():
+        if force or not npz.exists():
             if not (vtu.exists() and fb.exists()):
                 notes.append(f"{sid}: files missing"); continue
             if vlm is None:
@@ -158,7 +158,8 @@ def process_wing(job):
             cl_m, cm_m = coeffs_from_panels(dcp, area, pos, aoa, sref, xref)
             cl_v, cm_v = coeffs_from_panels(dcp_vlm, area, pos, aoa, sref, xref)
             a_r = np.radians(aoa); n = len(pos)
-            x = np.concatenate([pos, area[:, None], vlm["thick"][:, None], np.repeat(np.asarray(design)[None], n, 0),
+            # no VLM "thickness": training and holdout json store it differently (train ~ -0.03, holdout ~ 0.5)
+            x = np.concatenate([pos, area[:, None], np.repeat(np.asarray(design)[None], n, 0),
                                 np.full((n, 1), np.sin(a_r)), np.full((n, 1), np.cos(a_r)), dcp_vlm[:, None]], 1)
             ei, ea = knn_edges(pos)
             meta = dict(cl_su2_pressure=fr["cl_pressure"], cmy_su2_pressure=fr["cmy_pressure"],
@@ -187,21 +188,23 @@ def main():
     ap.add_argument("--sets", nargs="+", choices=["holdout", "train"], default=["holdout", "train"])
     ap.add_argument("--max-wings", type=int, default=0, help="per set, for a quick test")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--redo-list", default=None, help="file with wing names to reprocess even if done (e.g. raw/json_updated.txt)")
     a = ap.parse_args()
     raw, out = pathlib.Path(a.raw), pathlib.Path(a.out)
     design, rank, ref, ausm = tables(raw)
+    redo = set(pathlib.Path(a.redo_list).read_text().split()) if a.redo_list else set()
 
     jobs = []
     for s in a.sets:
         folder = raw / ("holdoutSet" if s == "holdout" else "trainingSet")
-        wings = sorted(p for p in folder.glob("*") if p.is_dir() and p.name in design)
+        wings = sorted((p for p in folder.rglob("*") if p.is_dir() and p.name in design), key=lambda p: p.name)  # training wings sit in trainingSet-partN/
         if a.max_wings:
             wings = wings[: a.max_wings]
         for w in wings:
             sref, xref = ref[w.name]
             jobs.append((str(w), "test" if s == "holdout" else "train", design[w.name],
-                         -1 if s == "holdout" else rank[w.name], sref, xref, ausm, str(out)))
-    print(f"{len(jobs)} wings to check ({', '.join(a.sets)})")
+                         -1 if s == "holdout" else rank[w.name], sref, xref, ausm, str(out), w.name in redo))
+    print(f"{len(jobs)} wings found ({', '.join(a.sets)}); expected {16 * ('holdout' in a.sets) + 256 * ('train' in a.sets)}")
 
     # keep rows already in the index for wings not in this run (e.g. run holdout, later train)
     rows = {}

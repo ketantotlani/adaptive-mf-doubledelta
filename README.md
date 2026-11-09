@@ -49,7 +49,7 @@ Results are appended to `results/*.jsonl`.
 | 960-panel target vs SU2 lift | mean 0.012, max 0.042 |
 | Surface triangles inside a VLM panel | 92% (rest assigned to nearest panel) |
 
-Known issues: the CL/CM stored in the VLM json do not match an integration of their own panel pressures, so they
+Known issues: the VLM json `thickness` field is stored differently in the training and holdout files (training ~ -0.03, holdout ~ 0.5), so it is not used as a feature; with it, the model fails on the holdout wings only (MSE 0.46 vs 0.05 without it). the CL/CM stored in the VLM json do not match an integration of their own panel pressures, so they
 are not used. Cases rerun with AUSM (`AUSMruns.info.txt`) are flagged (`ausm` column in index.csv);
 150201-4SN at 18 deg looks inconsistent. RANS cost is a flat ~127 CPU-h per case (no per-run times in the logs).
 
